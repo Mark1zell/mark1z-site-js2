@@ -1365,39 +1365,83 @@ function nl2brSafe(value) {
   }
 
   async function findOrCreateSupportConversation() {
-    if (!state.currentSession?.user) return null;
+  if (!state.currentSession?.user) return null;
 
-    await fetchMessengerData();
-    if (state.supportConversationId) {
-      await ensureSupportSeedMessages(state.supportConversationId);
-      return state.supportConversationId;
-    }
+  await fetchMessengerData();
 
-    const { data: newConversation, error } = await supabaseClient
-      .from('conversations')
-      .insert({
-        title: 'Mark1z Design',
-        is_support: true,
-        created_by: OWNER_UID,
-        updated_at: new Date().toISOString()
-      })
-      .select('*')
-      .maybeSingle();
+  if (state.supportConversationId) {
+    const alreadyMember = state.conversationMembers.some(
+  m =>
+    String(m.conversation_id) === String(state.supportConversationId) &&
+    String(m.user_id) === String(state.currentSession.user.id)
+);
 
-    if (error || !newConversation) return null;
+if (!alreadyMember) {
+  const { error: joinError } = await supabaseClient
+    .from('conversation_members')
+    .insert({
+      conversation_id: state.supportConversationId,
+      user_id: state.currentSession.user.id,
+      last_read_at: null
+    });
 
-    await supabaseClient.from('conversation_members').insert([
-      { conversation_id: newConversation.id, user_id: OWNER_UID, last_read_at: new Date().toISOString() },
-      { conversation_id: newConversation.id, user_id: state.currentSession.user.id, last_read_at: null }
-    ]);
-
-    state.supportConversationId = newConversation.id;
-
-    await fetchMessengerData();
-    await ensureSupportSeedMessages(newConversation.id);
-    return newConversation.id;
+  if (joinError) {
+    console.error('support join membership error', joinError);
   }
 
+  await fetchMessengerData();
+}
+    await ensureSupportSeedMessages(state.supportConversationId);
+    return state.supportConversationId;
+  }
+
+  const { data: newConversation, error } = await supabaseClient
+    .from('conversations')
+    .insert({
+      title: 'Mark1z Design',
+      is_support: true,
+      created_by: OWNER_UID,
+      updated_at: new Date().toISOString()
+    })
+    .select('*')
+    .maybeSingle();
+
+  if (error || !newConversation) {
+    console.error('findOrCreateSupportConversation insert conversation error', error);
+    return null;
+  }
+
+  const membersToInsert = [
+  {
+    conversation_id: newConversation.id,
+    user_id: OWNER_UID,
+    last_read_at: new Date().toISOString()
+  }
+];
+
+if (String(state.currentSession.user.id) !== String(OWNER_UID)) {
+  membersToInsert.push({
+    conversation_id: newConversation.id,
+    user_id: state.currentSession.user.id,
+    last_read_at: null
+  });
+}
+
+const { error: membersError } = await supabaseClient
+  .from('conversation_members')
+  .insert(membersToInsert);
+
+  if (membersError) {
+    console.error('findOrCreateSupportConversation insert members error', membersError);
+    return null;
+  }
+
+  state.supportConversationId = newConversation.id;
+
+  await fetchMessengerData();
+  await ensureSupportSeedMessages(newConversation.id);
+  return newConversation.id;
+}
   async function findOrCreateDirectConversation(otherUserId) {
     if (!state.currentSession?.user) return null;
 
