@@ -273,28 +273,28 @@
   };
 
   function escapeHtml(value) {
-    return String(value ?? '')
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#039;');
-  }
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
 
-  function safeText(value, fallback = '') {
-    const prepared = String(value ?? '').trim();
-    return prepared ? escapeHtml(prepared) : fallback;
-  }
+function safeText(value, fallback = '') {
+  const prepared = String(value ?? '').trim();
+  return prepared ? escapeHtml(prepared) : fallback;
+}
 
-  function safeUrl(value) {
-    const prepared = String(value ?? '').trim();
-    if (!prepared) return '';
-    return prepared.replace(/"/g, '&quot;').replace(/'/g, '&#039;');
-  }
+function safeUrl(value) {
+  const prepared = String(value ?? '').trim();
+  if (!prepared) return '';
+  return prepared.replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+}
 
-  function nl2brSafe(value) {
-    return safeText(value || '', '').replace(/\n/g, '<br>');
-  }
+function nl2brSafe(value) {
+  return safeText(value || '', '').replace(/\n/g, '<br>');
+}
 
   function getInitial(name, fallback = 'Г') {
     return String(name || fallback).trim().charAt(0).toUpperCase() || fallback;
