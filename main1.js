@@ -1581,7 +1581,6 @@
     </div>
   `;
 }
-
   async function renderMessengerDialogs() {
     if (!messengerDialogs) return;
 
