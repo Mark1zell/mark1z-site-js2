@@ -273,28 +273,28 @@
   };
 
   function escapeHtml(value) {
-  return String(value ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-}
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
 
-function safeText(value, fallback = '') {
-  const prepared = String(value ?? '').trim();
-  return prepared ? escapeHtml(prepared) : fallback;
-}
+  function safeText(value, fallback = '') {
+    const prepared = String(value ?? '').trim();
+    return prepared ? escapeHtml(prepared) : fallback;
+  }
 
-function safeUrl(value) {
-  const prepared = String(value ?? '').trim();
-  if (!prepared) return '';
-  return prepared.replace(/"/g, '&quot;').replace(/'/g, '&#039;');
-}
+  function safeUrl(value) {
+    const prepared = String(value ?? '').trim();
+    if (!prepared) return '';
+    return prepared.replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+  }
 
-function nl2brSafe(value) {
-  return safeText(value || '', '').replace(/\n/g, '<br>');
-}
+  function nl2brSafe(value) {
+    return safeText(value || '', '').replace(/\n/g, '<br>');
+  }
 
   function getInitial(name, fallback = 'Г') {
     return String(name || fallback).trim().charAt(0).toUpperCase() || fallback;
@@ -388,12 +388,14 @@ function nl2brSafe(value) {
   }
 
   function buildPublicUserCode(profile, userId) {
-    if (String(userId) === String(OWNER_UID)) return '#Mark1z';
-    const existing = String(profile?.public_id || profile?.user_code || '').trim();
-    if (existing) return existing.startsWith('#') ? existing : '#' + existing;
-    const digits = String(userId || '').replace(/\D/g, '');
-    return '#' + (digits.slice(-7).padStart(7, '0') || '0000001');
-  }
+  if (String(userId) === String(OWNER_UID)) return '#Mark1z';
+
+  const existing = String(profile?.public_id || profile?.user_code || '').trim();
+  if (existing) return existing.startsWith('#') ? existing : '#' + existing;
+
+  const digits = String(userId || '').replace(/\D/g, '');
+  return '#' + (digits.slice(-6).padStart(6, '0') || '000001');
+}
 
   function getProfileByUserId(userId) {
     if (String(userId) === String(SUPPORT_CHAT_IDENTITY.id)) return SUPPORT_CHAT_IDENTITY;
@@ -1103,60 +1105,60 @@ function nl2brSafe(value) {
   }
 
   async function searchPeople(query = '') {
-    try {
-      if (!peopleSearchResults) return;
+  try {
+    if (!peopleSearchResults) return;
 
-      await cacheProfiles();
+    await cacheProfiles();
 
-      let list = [...state.allProfilesCache];
-      const prepared = String(query || peopleSearchInput?.value || '').trim().toLowerCase();
+    let list = [...state.allProfilesCache];
+    const prepared = String(query || peopleSearchInput?.value || '').trim().toLowerCase();
 
-      if (prepared) {
-        list = list.filter(profile => {
-          const username = String(profile.username || '').toLowerCase();
-          const publicId = String(buildPublicUserCode(profile, profile.id) || '').toLowerCase();
-          return username.includes(prepared) || publicId.includes(prepared);
-        });
-      }
-
-      state.peopleSearchResults = list;
-
-      if (!list.length) {
-        peopleSearchResults.innerHTML = '<div class="mkz-card"><p>Никого не найдено.</p></div>';
-        return;
-      }
-
-      peopleSearchResults.innerHTML = list.map(profile => {
-        const avatarUrl = safeUrl(profile.avatar_url || '');
-        const name = safeText(profile.username || 'Пользователь', 'Пользователь');
-        const publicId = buildPublicUserCode(profile, profile.id);
-        const lastSeen = getVisibleLastSeen(profile);
-
-        return `
-          <button class="mkz-card mkz-card--hover mkz-person-card" type="button" data-open-profile="${profile.id}">
-            <div class="mkz-person-card__top">
-              <div class="mkz-person-card__avatar" style="${avatarUrl ? `background-image:url('${avatarUrl}');background-size:cover;background-position:center;` : ''}">
-                ${avatarUrl ? '' : getInitial(profile.username, 'U')}
-              </div>
-              <div class="mkz-person-card__meta">
-                <div class="mkz-person-card__name">${name}</div>
-                <div class="mkz-person-card__id">${publicId}</div>
-                <div class="mkz-person-card__status">${lastSeen}</div>
-              </div>
-            </div>
-          </button>
-        `;
-      }).join('');
-
-      $$('[data-open-profile]', peopleSearchResults).forEach(btn => {
-        btn.addEventListener('click', async () => {
-          await openPublicProfile(btn.dataset.openProfile);
-        });
+    if (prepared) {
+      list = list.filter(profile => {
+        const username = String(profile.username || '').toLowerCase();
+        const publicId = String(buildPublicUserCode(profile, profile.id) || '').toLowerCase();
+        return username.includes(prepared) || publicId.includes(prepared);
       });
-    } catch (err) {
-      console.error('searchPeople error', err);
     }
+
+    state.peopleSearchResults = list;
+
+    if (!list.length) {
+      peopleSearchResults.innerHTML = '<div class="mkz-card"><p>Никого не найдено.</p></div>';
+      return;
+    }
+
+    peopleSearchResults.innerHTML = list.map(profile => {
+      const avatarUrl = safeUrl(profile.avatar_url || '');
+      const name = safeText(profile.username || 'Пользователь', 'Пользователь');
+      const publicId = buildPublicUserCode(profile, profile.id);
+      const lastSeen = getVisibleLastSeen(profile);
+
+      return `
+        <button class="mkz-person-card" type="button" data-open-profile="${profile.id}">
+          <div class="mkz-person-card__top">
+            <div class="mkz-person-card__avatar" style="${avatarUrl ? `background-image:url('${avatarUrl}');` : ''}">
+              ${avatarUrl ? '' : getInitial(profile.username, 'U')}
+            </div>
+            <div class="mkz-person-card__meta">
+              <div class="mkz-person-card__name">${name}</div>
+              <div class="mkz-person-card__id">${publicId}</div>
+              <div class="mkz-person-card__status">${lastSeen}</div>
+            </div>
+          </div>
+        </button>
+      `;
+    }).join('');
+
+    $$('[data-open-profile]', peopleSearchResults).forEach(btn => {
+      btn.addEventListener('click', async () => {
+        await openPublicProfile(btn.dataset.openProfile);
+      });
+    });
+  } catch (err) {
+    console.error('searchPeople error', err);
   }
+}
 
   async function openPublicProfile(userId) {
     try {
@@ -1365,106 +1367,20 @@ function nl2brSafe(value) {
   }
 
   async function findOrCreateSupportConversation() {
-  if (!state.currentSession?.user) return null;
-
-  await fetchMessengerData();
-
-  if (state.supportConversationId) {
-    const alreadyMember = state.conversationMembers.some(
-  m =>
-    String(m.conversation_id) === String(state.supportConversationId) &&
-    String(m.user_id) === String(state.currentSession.user.id)
-);
-
-if (!alreadyMember) {
-  const { error: joinError } = await supabaseClient
-    .from('conversation_members')
-    .insert({
-      conversation_id: state.supportConversationId,
-      user_id: state.currentSession.user.id,
-      last_read_at: null
-    });
-
-  if (joinError) {
-    console.error('support join membership error', joinError);
-  }
-
-  await fetchMessengerData();
-}
-    await ensureSupportSeedMessages(state.supportConversationId);
-    return state.supportConversationId;
-  }
-
-  const { data: newConversation, error } = await supabaseClient
-    .from('conversations')
-    .insert({
-      title: 'Mark1z Design',
-      is_support: true,
-      created_by: OWNER_UID,
-      updated_at: new Date().toISOString()
-    })
-    .select('*')
-    .maybeSingle();
-
-  if (error || !newConversation) {
-    console.error('findOrCreateSupportConversation insert conversation error', error);
-    return null;
-  }
-
-  const membersToInsert = [
-  {
-    conversation_id: newConversation.id,
-    user_id: OWNER_UID,
-    last_read_at: new Date().toISOString()
-  }
-];
-
-if (String(state.currentSession.user.id) !== String(OWNER_UID)) {
-  membersToInsert.push({
-    conversation_id: newConversation.id,
-    user_id: state.currentSession.user.id,
-    last_read_at: null
-  });
-}
-
-const { error: membersError } = await supabaseClient
-  .from('conversation_members')
-  .insert(membersToInsert);
-
-  if (membersError) {
-    console.error('findOrCreateSupportConversation insert members error', membersError);
-    return null;
-  }
-
-  state.supportConversationId = newConversation.id;
-
-  await fetchMessengerData();
-  await ensureSupportSeedMessages(newConversation.id);
-  return newConversation.id;
-}
-  async function findOrCreateDirectConversation(otherUserId) {
     if (!state.currentSession?.user) return null;
 
     await fetchMessengerData();
-
-    const myId = String(state.currentSession.user.id);
-    const targetId = String(otherUserId);
-
-    const possible = state.conversations.find(conv => {
-      const members = state.conversationMembers
-        .filter(m => String(m.conversation_id) === String(conv.id))
-        .map(m => String(m.user_id));
-      return !conv.is_support && members.length === 2 && members.includes(myId) && members.includes(targetId);
-    });
-
-    if (possible) return possible.id;
+    if (state.supportConversationId) {
+      await ensureSupportSeedMessages(state.supportConversationId);
+      return state.supportConversationId;
+    }
 
     const { data: newConversation, error } = await supabaseClient
       .from('conversations')
       .insert({
-        title: 'Личный чат',
-        is_support: false,
-        created_by: state.currentSession.user.id,
+        title: 'Mark1z Design',
+        is_support: true,
+        created_by: OWNER_UID,
         updated_at: new Date().toISOString()
       })
       .select('*')
@@ -1473,13 +1389,77 @@ const { error: membersError } = await supabaseClient
     if (error || !newConversation) return null;
 
     await supabaseClient.from('conversation_members').insert([
-      { conversation_id: newConversation.id, user_id: state.currentSession.user.id, last_read_at: new Date().toISOString() },
-      { conversation_id: newConversation.id, user_id: otherUserId, last_read_at: null }
+      { conversation_id: newConversation.id, user_id: OWNER_UID, last_read_at: new Date().toISOString() },
+      { conversation_id: newConversation.id, user_id: state.currentSession.user.id, last_read_at: null }
     ]);
 
+    state.supportConversationId = newConversation.id;
+
+    await fetchMessengerData();
+    await ensureSupportSeedMessages(newConversation.id);
     return newConversation.id;
   }
 
+  async function findOrCreateDirectConversation(otherUserId) {
+  if (!state.currentSession?.user) return null;
+
+  await fetchMessengerData();
+
+  const myId = String(state.currentSession.user.id);
+  const targetId = String(otherUserId);
+
+  const possible = state.conversations.find(conv => {
+    if (conv.is_support) return false;
+
+    const members = state.conversationMembers
+      .filter(m => String(m.conversation_id) === String(conv.id))
+      .map(m => String(m.user_id));
+
+    return members.length === 2 && members.includes(myId) && members.includes(targetId);
+  });
+
+  if (possible) return possible.id;
+
+  const { data: newConversation, error } = await supabaseClient
+    .from('conversations')
+    .insert({
+      title: 'Личный чат',
+      is_direct: true,
+      is_support: false,
+      created_by: state.currentSession.user.id,
+      updated_at: new Date().toISOString()
+    })
+    .select('*')
+    .single();
+
+  if (error || !newConversation) {
+    console.error('create conversation error', error);
+    return null;
+  }
+
+  const { error: membersError } = await supabaseClient
+    .from('conversation_members')
+    .insert([
+      {
+        conversation_id: newConversation.id,
+        user_id: state.currentSession.user.id,
+        last_read_at: new Date().toISOString()
+      },
+      {
+        conversation_id: newConversation.id,
+        user_id: otherUserId,
+        last_read_at: null
+      }
+    ]);
+
+  if (membersError) {
+    console.error('create conversation members error', membersError);
+    return null;
+  }
+
+  await fetchMessengerData();
+  return newConversation.id;
+}
   function getConversationPeer(conversationId) {
     const members = state.conversationMembers.filter(m => String(m.conversation_id) === String(conversationId));
     const peer = members.find(m => String(m.user_id) !== String(state.currentSession?.user?.id));
@@ -1518,70 +1498,96 @@ const { error: membersError } = await supabaseClient
   }
 
   function renderConversationMessage(message) {
-    const isMine =
-      (String(message.user_id) === String(state.currentSession?.user?.id) && message.sender_mode !== 'support_brand') ||
-      (isOwner() && isSupportConversation(message.conversation_id) && message.sender_mode === 'support_brand');
+  const isMine =
+    (String(message.user_id) === String(state.currentSession?.user?.id) &&
+      message.sender_mode !== 'support_brand') ||
+    (isOwner() &&
+      isSupportConversation(message.conversation_id) &&
+      message.sender_mode === 'support_brand');
 
-    const author = getMessageAuthorIdentity(message);
-    const authorName = safeText(author?.username || (isMine ? 'Вы' : 'Пользователь'), 'Пользователь');
+  const author = getMessageAuthorIdentity(message);
+  const authorName = safeText(
+    author?.username || (isMine ? 'Вы' : 'Mark1z Design'),
+    isMine ? 'Вы' : 'Mark1z Design'
+  );
 
-    const attachmentUrl = safeUrl(message.attachment_url || '');
-    const attachmentName = safeText(message.attachment_name || 'Файл', 'Файл');
-    const attachmentType = String(message.attachment_type || '').toLowerCase();
-    const isImage = attachmentUrl && attachmentType.startsWith('image/');
-    const isAudio = attachmentUrl && attachmentType.startsWith('audio/');
+  const attachmentUrl = safeUrl(message.attachment_url || '');
+  const attachmentName = safeText(message.attachment_name || 'Файл', 'Файл');
+  const attachmentType = String(message.attachment_type || '').toLowerCase();
 
-    const canModerate =
-      (String(message.user_id) === String(state.currentSession?.user?.id) && message.sender_mode !== 'support_brand') ||
-      (isOwner() && isSupportConversation(message.conversation_id));
+  const isImage = attachmentUrl && attachmentType.startsWith('image/');
+  const isAudio = attachmentUrl && attachmentType.startsWith('audio/');
 
-    return `
-      <div class="mkz-message-row ${isMine ? 'mkz-message-row--me' : 'mkz-message-row--them'}">
-        <div class="mkz-message-bubble ${isMine ? 'mkz-message-bubble--me' : 'mkz-message-bubble--them'}">
-          <div class="mkz-message__meta">${authorName}</div>
+  const canModerate =
+    (String(message.user_id) === String(state.currentSession?.user?.id) &&
+      message.sender_mode !== 'support_brand') ||
+    (isOwner() && isSupportConversation(message.conversation_id));
 
-          ${message.text ? `<div>${nl2brSafe(message.text)}</div>` : ''}
+  const rowClass = isMine ? 'mkz-message-row mkz-message-row--me' : 'mkz-message-row mkz-message-row--them';
+  const bubbleClass = isMine ? 'mkz-message mkz-message--me' : 'mkz-message mkz-message--them';
 
-          ${isImage ? `
-            <div class="mkz-message__image">
-              <img
-                src="${attachmentUrl}"
-                alt="${attachmentName}"
-                data-zoom-image="${attachmentUrl}"
-                data-zoom-title="${attachmentName}"
-              >
-            </div>
-          ` : ''}
+  return `
+    <div class="${rowClass}">
+      <div class="${bubbleClass}">
+        <span class="mkz-message__title">${authorName}</span>
 
-          ${isAudio ? `
-            <div class="mkz-message-bubble__audio">
-              <audio controls src="${attachmentUrl}"></audio>
-              <div style="margin-top:8px;">
-                <a href="${attachmentUrl}" target="_blank" rel="noopener noreferrer" download="${attachmentName}">Скачать аудио</a>
-              </div>
-            </div>
-          ` : ''}
+        ${message.text ? `${nl2brSafe(message.text)}` : ''}
 
-          ${attachmentUrl && !isImage && !isAudio ? `
-            <div class="mkz-message-bubble__file">
-              <span>${attachmentName}</span>
-              <a href="${attachmentUrl}" target="_blank" rel="noopener noreferrer" download="${attachmentName}">
-                Скачать
-              </a>
-            </div>
-          ` : ''}
+        ${isImage ? `
+          <div class="mkz-message__image">
+            <img src="${attachmentUrl}" alt="${attachmentName}">
+          </div>
+        ` : ''}
 
-          <div class="mkz-message-time">${formatDateTime(message.created_at)}</div>
+        ${isAudio ? `
+          <div class="mkz-message__audio">
+            <audio controls src="${attachmentUrl}"></audio>
+          </div>
+        ` : ''}
+
+        ${attachmentUrl && !isImage && !isAudio ? `
+          <div class="mkz-message__file">
+            <a href="${attachmentUrl}" target="_blank" rel="noopener noreferrer" download="${attachmentName}">
+              ${attachmentName}
+            </a>
+          </div>
+        ` : ''}
+
+        <div class="mkz-message__footer">
+          <span class="mkz-message__time">${formatDateTime(message.created_at)}</span>
 
           ${canModerate ? `
-            <div class="mkz-review-admin" style="margin-top:10px;">
-              <button class="mkz-btn mkz-btn--danger" type="button" data-delete-message="${message.id}">Удалить</button>
+            <div class="mkz-message__actions">
+              <button
+                type="button"
+                class="mkz-message__icon-btn"
+                data-edit-message="${message.id}"
+                title="Редактировать"
+                aria-label="Редактировать"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zm18-11.5a1 1 0 0 0 0-1.41l-1.34-1.34a1 1 0 0 0-1.41 0l-1.13 1.13 3.75 3.75L21 5.75z"></path>
+                </svg>
+              </button>
+
+              <button
+                type="button"
+                class="mkz-message__icon-btn"
+                data-delete-message="${message.id}"
+                title="Удалить"
+                aria-label="Удалить"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M6 7h12l-1 13a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L6 7zm3-4h6l1 2h4v2H4V5h4l1-2z"></path>
+                </svg>
+              </button>
             </div>
           ` : ''}
         </div>
       </div>
-    `;
-  }
+    </div>
+  `;
+}
 
   async function renderMessengerDialogs() {
     if (!messengerDialogs) return;
@@ -1718,17 +1724,17 @@ const { error: membersError } = await supabaseClient
     const messages = state.conversationMessages.filter(m => String(m.conversation_id) === String(conversationId));
 
     if (messengerMessages) {
-      messengerMessages.innerHTML = messages.length
-        ? messages.map(renderConversationMessage).join('')
-        : `
-          <div class="mkz-messenger-empty">
-            <div class="mkz-messenger-empty__box">
-              <div class="mkz-messenger-empty__icon">✉</div>
-              <h3 class="mkz-messenger-empty__title">Диалог пуст</h3>
-              <p class="mkz-messenger-empty__text">Напишите первое сообщение.</p>
-            </div>
-          </div>
-        `;
+  messengerMessages.innerHTML = messages.length
+    ? messages.map(renderConversationMessage).join('')
+    : `
+      <div class="mkz-messenger-empty">
+        <div class="mkz-messenger-empty__box">
+          <div class="mkz-messenger-empty__icon">✉</div>
+          <h3 class="mkz-messenger-empty__title">Диалог пуст</h3>
+          <p class="mkz-messenger-empty__text">Напишите первое сообщение.</p>
+        </div>
+      </div>
+    `;
 
       messengerMessages.scrollTop = messengerMessages.scrollHeight;
     }
@@ -3604,37 +3610,43 @@ const { error: membersError } = await supabaseClient
     }
 
     if (openProfileMessengerBtn) {
-      openProfileMessengerBtn.addEventListener('click', async () => {
-        if (!state.currentSession) {
-          alert('Сначала войди в аккаунт');
-          openScreen('account');
-          return;
-        }
-
-        if (!state.openedProfile?.id) return;
-
-        const targetId = String(state.openedProfile.id);
-        const myId = String(state.currentSession.user.id);
-
-        if (targetId === myId) {
-          openScreen('messenger');
-          await renderMessengerDialogs();
-          return;
-        }
-
-        const conversationId = await findOrCreateDirectConversation(targetId);
-
-        if (!conversationId) {
-          alert('Не удалось открыть чат');
-          return;
-        }
-
-        openScreen('messenger');
-        await renderMessengerDialogs();
-        await openConversation(conversationId);
-      });
+  openProfileMessengerBtn.addEventListener('click', async () => {
+    if (!state.currentSession) {
+      alert('Сначала войди в аккаунт');
+      openScreen('account');
+      return;
     }
 
+    if (!state.openedProfile?.id) {
+      alert('Профиль не найден');
+      return;
+    }
+
+    const targetId = String(state.openedProfile.id);
+    const myId = String(state.currentSession.user.id);
+
+    if (targetId === myId) {
+      openScreen('messenger');
+      await renderMessengerDialogs();
+      if (state.supportConversationId) {
+        await openConversation(state.supportConversationId);
+      }
+      return;
+    }
+
+    const conversationId = await findOrCreateDirectConversation(targetId);
+
+    if (!conversationId) {
+      alert('Не удалось открыть чат');
+      console.error('Conversation was not created for target:', targetId);
+      return;
+    }
+
+    openScreen('messenger');
+    await renderMessengerDialogs();
+    await openConversation(conversationId);
+  });
+}
     if (messengerSearch) {
       messengerSearch.addEventListener('input', async () => {
         await renderMessengerDialogs();
